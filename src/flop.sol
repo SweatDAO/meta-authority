@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-pragma solidity 0.5.12;
+pragma solidity 0.5.15;
 
 import "./lib.sol";
 
@@ -29,17 +29,17 @@ contract GemLike {
 }
 
 /*
-   This thing creates gems on demand in return for dai.
+   This thing creates gems on demand in return for coin.
 
  - `lot` gems for sale
- - `bid` dai paid
- - `gal` receives dai income
+ - `bid` coin paid
+ - `gal` receives coin income
  - `ttl` single bid lifetime
  - `beg` minimum bid increase
  - `end` max auction duration
 */
 
-contract Flopper is DSNote {
+contract Flopper is LibNote {
     // --- Auth ---
     mapping (address => uint) public wards;
     function rely(address usr) external note auth { wards[usr] = 1; }

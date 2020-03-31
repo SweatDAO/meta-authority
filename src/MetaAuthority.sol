@@ -1,4 +1,4 @@
-/// MkrAuthority -- custom authority for MKR token access control
+/// MetaAuthority -- custom authority for META token access control
 
 // Copyright (C) 2019 Maker Ecosystem Growth Holdings, INC.
 //
@@ -15,9 +15,9 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-pragma solidity ^0.5.12;
+pragma solidity ^0.5.15;
 
-contract MkrAuthority {
+contract MetaAuthority {
   address public root;
   modifier sudo { require(msg.sender == root); _; }
   event LogSetRoot(address indexed newRoot);

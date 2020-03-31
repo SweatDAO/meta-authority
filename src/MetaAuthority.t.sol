@@ -13,19 +13,19 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-pragma solidity ^0.5.12;
+pragma solidity ^0.5.15;
 
 import "ds-test/test.sol";
 
-import "./MkrAuthority.sol";
+import "./MetaAuthority.sol";
 
 contract DSAuthority {
   function canCall(address src, address dst, bytes4 sig) public view returns (bool) {}
 }
 
 contract Tester {
-  MkrAuthority authority;
-  constructor(MkrAuthority authority_) public { authority = authority_; }
+  MetaAuthority authority;
+  constructor(MetaAuthority authority_) public { authority = authority_; }
   function setRoot(address usr) public { authority.setRoot(usr); }
   function rely(address usr) public { authority.rely(usr); }
   function deny(address usr) public { authority.deny(usr); }
@@ -41,12 +41,12 @@ contract Tester {
   function notMintOrBurn() auth public {}
 }
 
-contract MkrAuthorityTest is DSTest {
-  MkrAuthority authority;
+contract MetaAuthorityTest is DSTest {
+  MetaAuthority authority;
   Tester tester;
 
   function setUp() public {
-    authority = new MkrAuthority();
+    authority = new MetaAuthority();
     tester = new Tester(authority);
   }
 
