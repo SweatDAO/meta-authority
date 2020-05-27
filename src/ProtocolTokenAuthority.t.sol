@@ -17,18 +17,18 @@ pragma solidity ^0.5.15;
 
 import "ds-test/test.sol";
 
-import "./MetaAuthority.sol";
+import "./ProtocolTokenAuthority.sol";
 
 contract DSAuthority {
   function canCall(address src, address dst, bytes4 sig) public view returns (bool) {}
 }
 
 contract Tester {
-  MetaAuthority authority;
-  constructor(MetaAuthority authority_) public { authority = authority_; }
+  ProtocolTokenAuthority authority;
+  constructor(ProtocolTokenAuthority authority_) public { authority = authority_; }
   function setRoot(address usr) public { authority.setRoot(usr); }
-  function rely(address usr) public { authority.rely(usr); }
-  function deny(address usr) public { authority.deny(usr); }
+  function addAuthorization(address usr) public { authority.addAuthorization(usr); }
+  function removeAuthorization(address usr) public { authority.removeAuthorization(usr); }
 
   modifier auth {
     require(authority.canCall(msg.sender, address(this), msg.sig));
@@ -41,12 +41,12 @@ contract Tester {
   function notMintOrBurn() auth public {}
 }
 
-contract MetaAuthorityTest is DSTest {
-  MetaAuthority authority;
+contract ProtocolTokenAuthorityTest is DSTest {
+  ProtocolTokenAuthority authority;
   Tester tester;
 
   function setUp() public {
-    authority = new MetaAuthority();
+    authority = new ProtocolTokenAuthority();
     tester = new Tester(authority);
   }
 
@@ -62,25 +62,25 @@ contract MetaAuthorityTest is DSTest {
   }
 
   function testRely() public {
-    assertEq(authority.wards(address(tester)), 0);
-    authority.rely(address(tester));
-    assertEq(authority.wards(address(tester)), 1);
+    assertEq(authority.authorizedAccounts(address(tester)), 0);
+    authority.addAuthorization(address(tester));
+    assertEq(authority.authorizedAccounts(address(tester)), 1);
   }
 
   function testFailRely() public {
     // tester is not authority's root, so cannot call rely
-    tester.rely(address(tester));
+    tester.addAuthorization(address(tester));
   }
 
   function testDeny() public {
-    authority.rely(address(tester));
-    authority.deny(address(tester));
-    assertEq(authority.wards(address(tester)), 0);
+    authority.addAuthorization(address(tester));
+    authority.removeAuthorization(address(tester));
+    assertEq(authority.authorizedAccounts(address(tester)), 0);
   }
 
   function testFailDeny() public {
     // tester is not authority's root, so cannot call deny
-    tester.deny(address(tester));
+    tester.removeAuthorization(address(tester));
   }
 
   function testMintAsRoot() public {
@@ -88,7 +88,7 @@ contract MetaAuthorityTest is DSTest {
   }
 
   function testMintAsWard() public {
-    authority.rely(address(this));
+    authority.addAuthorization(address(this));
     authority.setRoot(address(0));
     tester.mint(address(this), 1);
   }
@@ -99,9 +99,9 @@ contract MetaAuthorityTest is DSTest {
   }
 
   function testBurn() public {
-    authority.rely(address(this));
+    authority.addAuthorization(address(this));
     tester.burn(address(this), 1);
-    authority.deny(address(this));
+    authority.removeAuthorization(address(this));
     tester.burn(address(this), 1);
     tester.burn(1);
   }

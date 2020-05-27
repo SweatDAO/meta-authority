@@ -1,4 +1,4 @@
-/// MetaAuthority -- custom authority for META token access control
+/// ProtocolTokenAuthority -- custom authority for PROT token access control
 
 // Copyright (C) 2019 Maker Ecosystem Growth Holdings, INC.
 //
@@ -17,20 +17,20 @@
 
 pragma solidity ^0.5.15;
 
-contract MetaAuthority {
+contract ProtocolTokenAuthority {
   address public root;
-  modifier sudo { require(msg.sender == root); _; }
+  modifier isRootCalling { require(msg.sender == root); _; }
   event LogSetRoot(address indexed newRoot);
-  function setRoot(address usr) public sudo {
+  function setRoot(address usr) public isRootCalling {
     root = usr;
     emit LogSetRoot(usr);
   }
 
-  mapping (address => uint) public wards;
+  mapping (address => uint) public authorizedAccounts;
   event LogRely(address indexed usr);
-  function rely(address usr) public sudo { wards[usr] = 1; emit LogRely(usr); }
+  function addAuthorization(address usr) public isRootCalling { authorizedAccounts[usr] = 1; emit LogRely(usr); }
   event LogDeny(address indexed usr);
-  function deny(address usr) public sudo { wards[usr] = 0; emit LogDeny(usr); }
+  function removeAuthorization(address usr) public isRootCalling { authorizedAccounts[usr] = 0; emit LogDeny(usr); }
 
   constructor() public {
     root = msg.sender;
@@ -49,7 +49,7 @@ contract MetaAuthority {
     if (sig == burn || sig == burnFrom || src == root) {
       return true;
     } else if (sig == mint) {
-      return (wards[src] == 1);
+      return (authorizedAccounts[src] == 1);
     } else {
       return false;
     }
