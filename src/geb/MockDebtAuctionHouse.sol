@@ -36,7 +36,7 @@ contract AccountingEngineLike {
    This thing creates protocol tokens on demand in return for system coins
 */
 
-contract DebtAuctionHouse is Logging {
+contract MockDebtAuctionHouse is Logging {
     // --- Auth ---
     mapping (address => uint) public authorizedAccounts;
     function addAuthorization(address account) external emitLog isAuthorized {

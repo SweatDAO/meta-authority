@@ -4,8 +4,8 @@ import "ds-test/test.sol";
 import "./ProtocolTokenAuthority.sol";
 
 import "./ProtocolTokenAuthority.sol";
-import "./DebtAuctionHouse.sol";
-import {SurplusAuctionHouse} from "./SurplusAuctionHouse.sol";
+import "./geb/MockDebtAuctionHouse.sol";
+import {MockSurplusAuctionHouseOne} from "./geb/MockSurplusAuctionHouse.sol";
 
 interface ERC20 {
     function setAuthority(address whom) external;
@@ -103,7 +103,7 @@ contract ProtocolTokenAuthorityTest is DSTest {
         user1.doBurn(address(user1), 1);
     }
 
-    function testCanBurnPit() public {
+    function testCanBurnTokenBurner() public {
         assertEq(protocolToken.balanceOf(address(user1)), 0);
 
         uint256 tokenBurnerBalance = protocolToken.balanceOf(address(tokenBurner));
@@ -139,7 +139,7 @@ contract ProtocolTokenAuthorityTest is DSTest {
         assertEq(protocolToken.balanceOf(address(user2)), 0);
     }
 
-    function testFullMetaAuthTest() public {
+    function testFullProtocolTokenAuthTest() public {
         //update the authority
         //this works because HEVM allows us to set the caller address
         protocolToken.setAuthority(address(auth));
@@ -158,21 +158,20 @@ contract ProtocolTokenAuthorityTest is DSTest {
         protocolToken.burn(address(this), 1);
         assertEq(balance + 9, protocolToken.balanceOf(address(this)));
 
-        //create a flopper
-        Flopper flop = new Flopper(address(this), address(protocolToken));
-        auth.rely(address(flop));
+        //create a debtAuctionHouse
+        MockDebtAuctionHouse debtAuctionHouse = new MockDebtAuctionHouse(address(this), address(protocolToken));
+        auth.addAuthorization(address(debtAuctionHouse));
 
-        //call flop.kick() and flop.deal() which will in turn test the protocolToken.mint() function
-        flop.kick(address(this), 1, 1);
-        flop.deal(1);
+        //call debtAuctionHouse.startAuction() and debtAuctionHouse.settleAuction() which will in turn test the protocolToken.mint() function
+        debtAuctionHouse.startAuction(address(this), 1, 1);
+        debtAuctionHouse.settleAuction(1);
 
-        //create a flapper
-        // SurplusAuctionHouse flap = new SurplusAuctionHouse(address(this), address(protocolToken));
-        // auth.rely(address(flop));
+        //create a surplus auction
+        MockSurplusAuctionHouseOne surplusAuctionHouse = new MockSurplusAuctionHouseOne(address(this), address(protocolToken));
+        auth.addAuthorization(address(debtAuctionHouse));
 
-        // TODO
-        //call flap.kick() which will in turn test the protocolToken.burn() function
-        // flap.kick(1);
-        // flop.deal(1);
+        //call surplusAuctionHouse.startAuction() which will in turn test the protocolToken.burn() function
+        surplusAuctionHouse.startAuction(1, 1);
+        debtAuctionHouse.settleAuction(1);
     }
 }
