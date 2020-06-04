@@ -1,4 +1,4 @@
-# geb-gov-token-authority
+# geb-protocol-token-authority
 
 Custom authority for allowing a protocol token to govern GEB.
 
