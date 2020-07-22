@@ -244,7 +244,7 @@ contract ProtocolTokenAuthorityTest {
     tester.mint(address(this), 1);
   }
 
-  function testMintAsOnwer() public {
+  function testMintAsOwner() public {
     Tester owner = new Tester(authority);
     authority.setOwner(address(owner));
     authority.addAuthorization(address(owner));
