@@ -1,4 +1,4 @@
-/// ProtocolTokenAuthority -- custom authority for PROT token access control
+/// ProtocolTokenAuthority -- custom authority for protocol token access control
 
 // Copyright (C) 2019 Maker Ecosystem Growth Holdings, INC.
 //
@@ -19,18 +19,29 @@ pragma solidity ^0.6.7;
 
 contract ProtocolTokenAuthority {
   address public root;
+  address public owner;
+
   modifier isRootCalling { require(msg.sender == root); _; }
+  modifier isRootOrOwnerCalling { require(msg.sender == root || owner == msg.sender); _; }
+
   event LogSetRoot(address indexed newRoot);
+  event LogSetOwner(address indexed newOwner);
+
   function setRoot(address usr) public isRootCalling {
     root = usr;
     emit LogSetRoot(usr);
   }
+  function setOwner(address usr) public isRootOrOwnerCalling {
+    owner = usr;
+    emit LogSetOwner(usr);
+  }
 
   mapping (address => uint) public authorizedAccounts;
+
   event LogRely(address indexed usr);
-  function addAuthorization(address usr) public isRootCalling { authorizedAccounts[usr] = 1; emit LogRely(usr); }
+  function addAuthorization(address usr) public isRootOrOwnerCalling { authorizedAccounts[usr] = 1; emit LogRely(usr); }
   event LogDeny(address indexed usr);
-  function removeAuthorization(address usr) public isRootCalling { authorizedAccounts[usr] = 0; emit LogDeny(usr); }
+  function removeAuthorization(address usr) public isRootOrOwnerCalling { authorizedAccounts[usr] = 0; emit LogDeny(usr); }
 
   constructor() public {
     root = msg.sender;
@@ -46,7 +57,7 @@ contract ProtocolTokenAuthority {
   function canCall(address src, address, bytes4 sig)
       public view returns (bool)
   {
-    if (sig == burn || sig == burnFrom || src == root) {
+    if (sig == burn || sig == burnFrom || src == root || src == owner) {
       return true;
     } else if (sig == mint) {
       return (authorizedAccounts[src] == 1);

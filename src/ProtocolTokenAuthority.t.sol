@@ -27,6 +27,7 @@ contract Tester {
   ProtocolTokenAuthority authority;
   constructor(ProtocolTokenAuthority authority_) public { authority = authority_; }
   function setRoot(address usr) public { authority.setRoot(usr); }
+  function setOwner(address usr) public { authority.setOwner(usr); }
   function addAuthorization(address usr) public { authority.addAuthorization(usr); }
   function removeAuthorization(address usr) public { authority.removeAuthorization(usr); }
 
@@ -178,39 +179,85 @@ contract ProtocolTokenAuthorityTest {
     tester.setRoot(address(tester));
   }
 
-  function testRely() public {
+  function testFailSetRootAsOwner() public {
+    authority.setOwner(address(tester));
+    authority.setRoot(address(0));
+    tester.setRoot(address(tester));
+  }
+
+  function testSetOwner() public {
+    assertTrue(authority.owner() == address(0));
+    authority.setOwner(address(tester));
+    assertTrue(authority.owner() == address(tester));
+    assertEq(authority.authorizedAccounts(address(tester)), 0);
+  }
+
+  function testFailSetOnwer() public {
+    assertTrue(authority.owner() != address(tester));
+    tester.setOwner(address(tester));
+  }
+
+  function testRemoveOwnerByOwner() public {
+    authority.setOwner(address(tester));
+    authority.setRoot(address(0));
+    tester.setOwner(address(0));
+    assertTrue(authority.owner() == address(0));
+  }
+
+  function testAddAuth() public {
     assertEq(authority.authorizedAccounts(address(tester)), 0);
     authority.addAuthorization(address(tester));
     assertEq(authority.authorizedAccounts(address(tester)), 1);
   }
 
-  function testFailRely() public {
+  function testFailAddAuth() public {
     // tester is not authority's root, so cannot call rely
     tester.addAuthorization(address(tester));
   }
 
-  function testDeny() public {
+  function testAddAuthOwner() public {
+    authority.setOwner(address(tester));
+    tester.addAuthorization(address(tester));
+    assertEq(authority.authorizedAccounts(address(tester)), 1);
+  }
+
+  function testRemoveAuth() public {
     authority.addAuthorization(address(tester));
     authority.removeAuthorization(address(tester));
     assertEq(authority.authorizedAccounts(address(tester)), 0);
   }
 
-  function testFailDeny() public {
-    // tester is not authority's root, so cannot call deny
+  function testFailRemoveAuth() public {
+    // tester is not authority's root, so cannot call removeAuthorization
     tester.removeAuthorization(address(tester));
   }
 
+  function testRemoveAuthOwner() public {
+    authority.setOwner(address(tester));
+    tester.addAuthorization(address(tester));
+    tester.removeAuthorization(address(tester));
+    assertEq(authority.authorizedAccounts(address(tester)), 0);
+  }
+
   function testMintAsRoot() public {
+    assertEq(authority.authorizedAccounts(address(this)), 0);
     tester.mint(address(this), 1);
   }
 
-  function testMintAsWard() public {
+  function testMintAsOnwer() public {
+    Tester owner = new Tester(authority);
+    authority.setOwner(address(owner));
+    authority.addAuthorization(address(owner));
+    owner.mint(address(this), 1);
+  }
+
+  function testMintAsAuthorizedAccount() public {
     authority.addAuthorization(address(this));
     authority.setRoot(address(0));
     tester.mint(address(this), 1);
   }
 
-  function testFailMintNotWardNotRoot() public {
+  function testFailMintNotAuthedNotRootNotOwner() public {
     authority.setRoot(address(0));
     tester.mint(address(this), 1);
   }
