@@ -71,7 +71,7 @@ contract MockDebtAuctionHouse is Logging {
     uint48   public   totalAuctionLength = 2 days;
     uint256  public   auctionsStarted = 0;
     // Accumulator for all debt auctions currently not settled
-    uint256  public   activeDebtAuctionsAccumulator;
+    uint256  public   activeDebtAuctions;
     uint256  public   contractEnabled;
 
     bytes32 public constant AUCTION_HOUSE_TYPE = bytes32("DEBT");
@@ -139,7 +139,7 @@ contract MockDebtAuctionHouse is Logging {
         bids[id].highBidder = incomeReceiver;
         bids[id].auctionDeadline = addUint48(uint48(now), totalAuctionLength);
 
-        activeDebtAuctionsAccumulator = addUint256(activeDebtAuctionsAccumulator, 1);
+        activeDebtAuctions = addUint256(activeDebtAuctions, 1);
 
         emit StartAuction(id, amountToSell, initialBid, incomeReceiver);
     }
@@ -175,7 +175,7 @@ contract MockDebtAuctionHouse is Logging {
         require(contractEnabled == 1, "MockDebtAuctionHouse/not-live");
         require(bids[id].bidExpiry != 0 && (bids[id].bidExpiry < now || bids[id].auctionDeadline < now), "MockDebtAuctionHouse/not-finished");
         protocolToken.mint(bids[id].highBidder, bids[id].amountToSell);
-        activeDebtAuctionsAccumulator = subtract(activeDebtAuctionsAccumulator, 1);
+        activeDebtAuctions = subtract(activeDebtAuctions, 1);
         delete bids[id];
     }
 
@@ -188,7 +188,7 @@ contract MockDebtAuctionHouse is Logging {
         require(contractEnabled == 0, "MockDebtAuctionHouse/contract-still-enabled");
         require(bids[id].highBidder != address(0), "MockDebtAuctionHouse/high-bidder-not-set");
         cdpEngine.createUnbackedDebt(address(accountingEngine), bids[id].highBidder, bids[id].bidAmount);
-        activeDebtAuctionsAccumulator = subtract(activeDebtAuctionsAccumulator, 1);
+        activeDebtAuctions = subtract(activeDebtAuctions, 1);
         delete bids[id];
     }
 }
