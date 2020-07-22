@@ -1,4 +1,4 @@
-/// MockSurplusAuctionHouse.sol
+/// SurplusAuctionHouse.sol
 
 // Copyright (C) 2018 Rain <rainbreak@riseup.net>
 //
@@ -36,7 +36,7 @@ abstract contract TokenLike {
    This thing lets you auction some coins in return for protocol tokens
 */
 
-contract MockSurplusAuctionHouseOne is Logging {
+contract MockSurplusAuctionHouse is Logging {
     // --- Auth ---
     mapping (address => uint) public authorizedAccounts;
     function addAuthorization(address account) external emitLog isAuthorized {
@@ -46,7 +46,7 @@ contract MockSurplusAuctionHouseOne is Logging {
       authorizedAccounts[account] = 0;
     }
     modifier isAuthorized {
-        require(authorizedAccounts[msg.sender] == 1, "SurplusAuctionHouseOne/account-not-authorized");
+        require(authorizedAccounts[msg.sender] == 1, "PreSettlementSurplusAuctionHouse/account-not-authorized");
         _;
     }
 
@@ -71,6 +71,8 @@ contract MockSurplusAuctionHouseOne is Logging {
     uint256  public   auctionsStarted = 0;
     uint256  public   contractEnabled;
 
+    bytes32 public constant AUCTION_HOUSE_TYPE = bytes32("SURPLUS");
+
     // --- Events ---
     event StartAuction(
         uint256 id,
@@ -87,10 +89,10 @@ contract MockSurplusAuctionHouseOne is Logging {
     }
 
     // --- Math ---
-    function add(uint48 x, uint48 y) internal pure returns (uint48 z) {
+    function addUint48(uint48 x, uint48 y) internal pure returns (uint48 z) {
         require((z = x + y) >= x);
     }
-    function mul(uint x, uint y) internal pure returns (uint z) {
+    function multiply(uint x, uint y) internal pure returns (uint z) {
         require(y == 0 || (z = x * y) / y == x);
     }
 
@@ -99,38 +101,38 @@ contract MockSurplusAuctionHouseOne is Logging {
         if (parameter == "bidIncrease") bidIncrease = data;
         else if (parameter == "bidDuration") bidDuration = uint48(data);
         else if (parameter == "totalAuctionLength") totalAuctionLength = uint48(data);
-        else revert("SurplusAuctionHouseOne/modify-unrecognized-param");
+        else revert("PreSettlementSurplusAuctionHouse/modify-unrecognized-param");
     }
 
     // --- Auction ---
     function startAuction(uint amountToSell, uint initialBid) external isAuthorized returns (uint id) {
-        require(contractEnabled == 1, "SurplusAuctionHouseOne/contract-not-enabled");
-        require(auctionsStarted < uint(-1), "SurplusAuctionHouseOne/overflow");
+        require(contractEnabled == 1, "PreSettlementSurplusAuctionHouse/contract-not-enabled");
+        require(auctionsStarted < uint(-1), "PreSettlementSurplusAuctionHouse/overflow");
         id = ++auctionsStarted;
 
         bids[id].bidAmount = initialBid;
         bids[id].amountToSell = amountToSell;
         bids[id].highBidder = msg.sender;
-        bids[id].auctionDeadline = add(uint48(now), totalAuctionLength);
+        bids[id].auctionDeadline = addUint48(uint48(now), totalAuctionLength);
 
         cdpEngine.transferInternalCoins(msg.sender, address(this), amountToSell);
 
         emit StartAuction(id, amountToSell, initialBid);
     }
     function restartAuction(uint id) external emitLog {
-        require(bids[id].auctionDeadline < now, "SurplusAuctionHouseOne/not-finished");
-        require(bids[id].bidExpiry == 0, "SurplusAuctionHouseOne/bid-already-placed");
-        bids[id].auctionDeadline = add(uint48(now), totalAuctionLength);
+        require(bids[id].auctionDeadline < now, "PreSettlementSurplusAuctionHouse/not-finished");
+        require(bids[id].bidExpiry == 0, "PreSettlementSurplusAuctionHouse/bid-already-placed");
+        bids[id].auctionDeadline = addUint48(uint48(now), totalAuctionLength);
     }
     function increaseBidSize(uint id, uint amountToBuy, uint bid) external emitLog {
-        require(contractEnabled == 1, "SurplusAuctionHouseOne/contract-not-enabled");
-        require(bids[id].highBidder != address(0), "SurplusAuctionHouseOne/high-bidder-not-set");
-        require(bids[id].bidExpiry > now || bids[id].bidExpiry == 0, "SurplusAuctionHouseOne/bid-already-expired");
-        require(bids[id].auctionDeadline > now, "SurplusAuctionHouseOne/auction-already-expired");
+        require(contractEnabled == 1, "PreSettlementSurplusAuctionHouse/contract-not-enabled");
+        require(bids[id].highBidder != address(0), "PreSettlementSurplusAuctionHouse/high-bidder-not-set");
+        require(bids[id].bidExpiry > now || bids[id].bidExpiry == 0, "PreSettlementSurplusAuctionHouse/bid-already-expired");
+        require(bids[id].auctionDeadline > now, "PreSettlementSurplusAuctionHouse/auction-already-expired");
 
-        require(amountToBuy == bids[id].amountToSell, "SurplusAuctionHouseOne/amounts-not-matching");
-        require(bid > bids[id].bidAmount, "SurplusAuctionHouseOne/bid-not-higher");
-        require(mul(bid, ONE) >= mul(bidIncrease, bids[id].bidAmount), "SurplusAuctionHouseOne/insufficient-increase");
+        require(amountToBuy == bids[id].amountToSell, "PreSettlementSurplusAuctionHouse/amounts-not-matching");
+        require(bid > bids[id].bidAmount, "PreSettlementSurplusAuctionHouse/bid-not-higher");
+        require(multiply(bid, ONE) >= multiply(bidIncrease, bids[id].bidAmount), "PreSettlementSurplusAuctionHouse/insufficient-increase");
 
         if (msg.sender != bids[id].highBidder) {
             protocolToken.move(msg.sender, bids[id].highBidder, bids[id].bidAmount);
@@ -139,11 +141,11 @@ contract MockSurplusAuctionHouseOne is Logging {
         protocolToken.move(msg.sender, address(this), bid - bids[id].bidAmount);
 
         bids[id].bidAmount = bid;
-        bids[id].bidExpiry = add(uint48(now), bidDuration);
+        bids[id].bidExpiry = addUint48(uint48(now), bidDuration);
     }
     function settleAuction(uint id) external emitLog {
-        require(contractEnabled == 1, "SurplusAuctionHouseOne/contract-not-enabled");
-        require(bids[id].bidExpiry != 0 && (bids[id].bidExpiry < now || bids[id].auctionDeadline < now), "SurplusAuctionHouseOne/not-finished");
+        require(contractEnabled == 1, "PreSettlementSurplusAuctionHouse/contract-not-enabled");
+        require(bids[id].bidExpiry != 0 && (bids[id].bidExpiry < now || bids[id].auctionDeadline < now), "PreSettlementSurplusAuctionHouse/not-finished");
         cdpEngine.transferInternalCoins(address(this), bids[id].highBidder, bids[id].amountToSell);
         protocolToken.burn(address(this), bids[id].bidAmount);
         delete bids[id];
@@ -154,121 +156,9 @@ contract MockSurplusAuctionHouseOne is Logging {
         cdpEngine.transferInternalCoins(address(this), msg.sender, cdpEngine.coinBalance(address(this)));
     }
     function terminateAuctionPrematurely(uint id) external emitLog {
-        require(contractEnabled == 0, "SurplusAuctionHouseOne/contract-still-enabled");
-        require(bids[id].highBidder != address(0), "SurplusAuctionHouseOne/high-bidder-not-set");
+        require(contractEnabled == 0, "PreSettlementSurplusAuctionHouse/contract-still-enabled");
+        require(bids[id].highBidder != address(0), "PreSettlementSurplusAuctionHouse/high-bidder-not-set");
         protocolToken.move(address(this), bids[id].highBidder, bids[id].bidAmount);
-        delete bids[id];
-    }
-}
-
-contract MockSurplusAuctionHouseTwo is Logging {
-    // --- Auth ---
-    mapping (address => uint) public authorizedAccounts;
-    function addAuthorization(address account) external emitLog isAuthorized {
-      authorizedAccounts[account] = 1;
-    }
-    function removeAuthorization(address account) external emitLog isAuthorized {
-      authorizedAccounts[account] = 0;
-    }
-    modifier isAuthorized {
-        require(authorizedAccounts[msg.sender] == 1, "SurplusAuctionHouseTwo/account-not-authorized");
-        _;
-    }
-
-    // --- Data ---
-    struct Bid {
-        uint256 bidAmount;
-        uint256 amountToSell;
-        address highBidder;
-        uint48  bidExpiry;
-        uint48  auctionDeadline;
-    }
-
-    mapping (uint => Bid) public bids;
-
-    CDPEngineLike        public cdpEngine;
-    TokenLike            public protocolToken;
-
-    uint256  constant ONE = 1.00E18;
-    uint256  public   bidIncrease = 1.05E18;
-    uint48   public   bidDuration = 3 hours;
-    uint48   public   totalAuctionLength = 2 days;
-    uint256  public   auctionsStarted = 0;
-    uint256  public   contractEnabled;
-
-    // --- Events ---
-    event StartAuction(
-        uint256 id,
-        uint256 amountToSell,
-        uint256 initialBid
-    );
-
-    // --- Init ---
-    constructor(address cdpEngine_, address protocolToken_) public {
-        authorizedAccounts[msg.sender] = 1;
-        cdpEngine = CDPEngineLike(cdpEngine_);
-        protocolToken = TokenLike(protocolToken_);
-        contractEnabled = 1;
-    }
-
-    // --- Math ---
-    function add(uint48 x, uint48 y) internal pure returns (uint48 z) {
-        require((z = x + y) >= x);
-    }
-    function mul(uint x, uint y) internal pure returns (uint z) {
-        require(y == 0 || (z = x * y) / y == x);
-    }
-
-    // --- Admin ---
-    function modifyParameters(bytes32 parameter, uint data) external emitLog isAuthorized {
-        if (parameter == "bidIncrease") bidIncrease = data;
-        else if (parameter == "bidDuration") bidDuration = uint48(data);
-        else if (parameter == "totalAuctionLength") totalAuctionLength = uint48(data);
-        else revert("SurplusAuctionHouseTwo/modify-unrecognized-param");
-    }
-
-    // --- Auction ---
-    function startAuction(uint amountToSell, uint initialBid) external //isAuthorized
-    returns (uint id) {
-        require(auctionsStarted < uint(-1), "SurplusAuctionHouseTwo/overflow");
-        id = ++auctionsStarted;
-
-        bids[id].bidAmount = initialBid;
-        bids[id].amountToSell = amountToSell;
-        bids[id].highBidder = msg.sender;
-        bids[id].auctionDeadline = add(uint48(now), totalAuctionLength);
-
-        cdpEngine.transferInternalCoins(msg.sender, address(this), amountToSell);
-
-        emit StartAuction(id, amountToSell, initialBid);
-    }
-    function restartAuction(uint id) external emitLog {
-        require(bids[id].auctionDeadline < now, "SurplusAuctionHouseTwo/not-finished");
-        require(bids[id].bidExpiry == 0, "SurplusAuctionHouseTwo/bid-already-placed");
-        bids[id].auctionDeadline = add(uint48(now), totalAuctionLength);
-    }
-    function increaseBidSize(uint id, uint amountToBuy, uint bid) external emitLog {
-        require(bids[id].highBidder != address(0), "SurplusAuctionHouseTwo/high-bidder-not-set");
-        require(bids[id].bidExpiry > now || bids[id].bidExpiry == 0, "SurplusAuctionHouseTwo/bid-already-expired");
-        require(bids[id].auctionDeadline > now, "SurplusAuctionHouseTwo/auction-already-expired");
-
-        require(amountToBuy == bids[id].amountToSell, "SurplusAuctionHouseTwo/amounts-not-matching");
-        require(bid > bids[id].bidAmount, "SurplusAuctionHouseTwo/bid-not-higher");
-        require(mul(bid, ONE) >= mul(bidIncrease, bids[id].bidAmount), "SurplusAuctionHouseTwo/insufficient-increase");
-
-        if (msg.sender != bids[id].highBidder) {
-            protocolToken.move(msg.sender, bids[id].highBidder, bids[id].bidAmount);
-            bids[id].highBidder = msg.sender;
-        }
-        protocolToken.move(msg.sender, address(this), bid - bids[id].bidAmount);
-
-        bids[id].bidAmount = bid;
-        bids[id].bidExpiry = add(uint48(now), bidDuration);
-    }
-    function settleAuction(uint id) external emitLog {
-        require(bids[id].bidExpiry != 0 && (bids[id].bidExpiry < now || bids[id].auctionDeadline < now), "SurplusAuctionHouseOne/not-finished");
-        cdpEngine.transferInternalCoins(address(this), bids[id].highBidder, bids[id].amountToSell);
-        protocolToken.burn(address(this), bids[id].bidAmount);
         delete bids[id];
     }
 }
