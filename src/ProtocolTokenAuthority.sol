@@ -24,24 +24,24 @@ contract ProtocolTokenAuthority {
   modifier isRootCalling { require(msg.sender == root); _; }
   modifier isRootOrOwnerCalling { require(msg.sender == root || owner == msg.sender); _; }
 
-  event LogSetRoot(address indexed newRoot);
-  event LogSetOwner(address indexed newOwner);
+  event SetRoot(address indexed newRoot);
+  event SetOwner(address indexed newOwner);
 
   function setRoot(address usr) public isRootCalling {
     root = usr;
-    emit LogSetRoot(usr);
+    emit SetRoot(usr);
   }
   function setOwner(address usr) public isRootOrOwnerCalling {
     owner = usr;
-    emit LogSetOwner(usr);
+    emit SetOwner(usr);
   }
 
   mapping (address => uint) public authorizedAccounts;
 
-  event LogRely(address indexed usr);
-  function addAuthorization(address usr) public isRootOrOwnerCalling { authorizedAccounts[usr] = 1; emit LogRely(usr); }
-  event LogDeny(address indexed usr);
-  function removeAuthorization(address usr) public isRootOrOwnerCalling { authorizedAccounts[usr] = 0; emit LogDeny(usr); }
+  event AddAuthorization(address indexed usr);
+  function addAuthorization(address usr) public isRootOrOwnerCalling { authorizedAccounts[usr] = 1; emit AddAuthorization(usr); }
+  event RemoveAuthorization(address indexed usr);
+  function removeAuthorization(address usr) public isRootOrOwnerCalling { authorizedAccounts[usr] = 0; emit RemoveAuthorization(usr); }
 
   constructor() public {
     root = msg.sender;
