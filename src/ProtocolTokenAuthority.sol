@@ -45,6 +45,7 @@ contract ProtocolTokenAuthority {
 
   constructor() public {
     root = msg.sender;
+    emit SetRoot(msg.sender);
   }
 
   // bytes4(keccak256(abi.encodePacked('burn(uint256)')))
