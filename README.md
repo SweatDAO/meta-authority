@@ -20,8 +20,6 @@ Though this contract could be used in different ways, it was designed in the con
 ------------------    -----------------    ----------------------    ------------------------    -----
 ```
 
-Such a structure allows governance proposals voted in on the GovernanceQuorum to make arbtirary changes to the PROT token and its permissions subject to a delay. (See DappHub contracts
-[DSChief](https://github.com/dapphub/ds-chief) and [DSPause](https://github.com/dapphub/ds-pause)
-for implementations of the voting contract and the delay contract, respectively.)
+Such a structure allows governance proposals voted in on the GovernanceQuorum to make arbtirary changes to the PROT token and its permissions subject to a delay. 
 
 Note that the ProtocolTokenAuthority allows for upgrading of the PROT token's `authority` or `owner` by the `root`.
