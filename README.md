@@ -6,8 +6,10 @@ Intentionally simple. Once set as the protocol token's authority, if the protoco
 
 * any user may call PROT's `burn` function
 * only authorized users (according to the ProtocolTokenAuthority's `authorizedAccounts`) can call PROT's `mint()` function
-* only the `root` user set in the authority can call other `isAuthorized`-protected functions of the PROT token contract
-* only the `root` user can modify the ProtocolTokenAuthority's `authorizedAccounts`s or change the `root`
+* only the `root` and `owner` set in the authority can call other `isAuthorized`-protected functions of the PROT token contract
+* only the `root` and `owner` can modify the ProtocolTokenAuthority's `authorizedAccounts`s or change the `root`
+* only the `root` can change the `owner`
+* the `owner` can change itself
 
 Though this contract could be used in different ways, it was designed in the context of an overall design for control of the PROT token via PROT governance as illustrated below.
 
